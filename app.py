@@ -595,7 +595,7 @@ except ValueError as exc:
 st.markdown(
     f"""
     <div class="emma-topbar">
-      <div class="emma-brand"><div class="emma-mark">e</div>    <span>AI</span></div>
+      <div class="emma-brand"></div>    <span>AI</span></div>
       <div class="emma-status"><span class="emma-status-dot"></span>{provider.title()} · {settings.provider_model(provider)}</div>
     </div>
     """,
