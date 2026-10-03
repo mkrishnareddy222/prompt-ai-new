@@ -64,3 +64,11 @@ async def validation_exception_handler(
         status_code=422,
         content={"detail": jsonable_encoder(exc.errors())},
     )
+
+import os
+import uvicorn
+
+if __name__ == "__main__":
+    # Render provides the PORT environment variable automatically (default 10000)
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
