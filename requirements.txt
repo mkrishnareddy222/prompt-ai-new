@@ -16,3 +16,5 @@ typing_extensions==4.16.0
 python-dotenv==1.0.0
 openai==3.19.2
 streamlit==1.64.0
+sentence-transformers
+fastapi

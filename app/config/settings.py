@@ -9,6 +9,17 @@ load_dotenv()
 class Settings:
     """Application configuration."""
 
+    API_CORS_ALLOWED_ORIGINS: list[str] = [
+        origin.strip()
+        for origin in os.getenv(
+            "API_CORS_ALLOWED_ORIGINS",
+            "http://localhost:3000,http://127.0.0.1:3000,"
+            "http://localhost:5173,http://127.0.0.1:5173,"
+            "http://localhost:8081,http://127.0.0.1:8081",
+        ).split(",")
+        if origin.strip()
+    ]
+
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "groq").lower()
 
     GROQ_API_KEY: str = os.getenv(
