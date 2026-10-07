@@ -18,3 +18,9 @@ openai==3.19.2
 streamlit==1.64.0
 sentence-transformers
 fastapi
+langchain
+langchain-openai
+langchain-community
+chromadb
+langchain-huggingface
+langchain_groq

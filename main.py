@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.config.settings import settings
 from api.search import router as search_router
+from api.rag import router as rag_router
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(search_router)
+app.include_router(rag_router)
 
 
 def _redact_sensitive_fields(value):
