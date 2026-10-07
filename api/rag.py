@@ -108,7 +108,7 @@ async def upload_or_append_documents(
     files: List[UploadFile] = File(...)
 ):
     """
-    Accepts files and updates the database directory.
+    Accepts  files and updates the database directory.
     - If session doesn't exist: Creates a fresh persistent folder.
     - If session exists: Dynamically updates the database with new chunks mid-conversation!
     """
