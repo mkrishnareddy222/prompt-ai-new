@@ -29,8 +29,6 @@ router = APIRouter(prefix="/api", tags=["rag"])
 logger = logging.getLogger(__name__)
 
 TOP_K = 3               
-CHUNK_SIZE = 500        
-CHUNK_OVERLAP = 50
 
 # Target directory path where persistent vector storage files reside
 PERSISTENT_DB_DIR = Path(__file__).parent.parent / "storage" / "vector_sessions"
@@ -99,20 +97,26 @@ def background_disk_cleanup(session_path: Path):
 
 
 # ═══════════════════════════════════════════════════════════════
-# 1. ENDPOINT A: UPLOAD & APPEND (Supports mid-chat file additions)
+# 1. ENDPOINT A: UPLOAD & APPEND (With dynamic chunk configurations)
 # ═══════════════════════════════════════════════════════════════
 @router.post("/rag/upload")
 async def upload_or_append_documents(
     session_id: str = Form(...),
     provider: str = Form("gemini"),
+    chunk_size: int = Form(500),       # CHANGED: Extracted dynamically from frontend Form weights
+    chunk_overlap: int = Form(50),     # CHANGED: Extracted dynamically from frontend Form weights
     files: List[UploadFile] = File(...)
 ):
     """
-    Accepts  files and updates the database directory.
+    Accepts files and updates the database directory.
+    - Captures chunk size and overlap properties passed dynamically from UI sliders.
     - If session doesn't exist: Creates a fresh persistent folder.
     - If session exists: Dynamically updates the database with new chunks mid-conversation!
     """
-    logger.info("Processing file indexing event for session: %s", session_id)
+    logger.info(
+        "Processing file indexing event for session %s (Chunk Size: %d, Overlap: %d)", 
+        session_id, chunk_size, chunk_overlap
+    )
     session_path = PERSISTENT_DB_DIR / session_id
 
     parsed_documents = []
@@ -122,18 +126,17 @@ async def upload_or_append_documents(
         parsed_documents.append(doc_obj)
 
     try:
-        splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+        # UPDATED: Injected dynamic parameters into text splitter instantiation
+        splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         chunks = splitter.split_documents(parsed_documents)
         embeddings = get_embedding_provider(provider)
         
         if session_path.exists():
-            # IMPLEMENTATION VALUE: Dynamically append new files to the existing database index!
             logger.info("Session database path exists. Appending new file partitions cleanly to disk storage...")
             vectordb = Chroma(persist_directory=str(session_path), embedding_function=embeddings)
             vectordb.add_documents(documents=chunks)
             message = f"Successfully appended {len(files)} new files to active session {session_id}."
         else:
-            # Create a completely fresh persistent instance mapping
             logger.info("Initializing brand new session store cluster on disk location storage layout...")
             Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory=str(session_path))
             message = f"Successfully initialized vector store and indexed {len(files)} files for session {session_id}."
@@ -222,7 +225,7 @@ Answer:"""
 @router.post("/rag/cleanup")
 async def purge_session_storage(
     session_id: str = Form(...),
-    background_tasks: BackgroundTasks = BackgroundTasks()
+    background_tasks: BackgroundTasks = None,
 ):
     """
     Triggers immediate vector storage file space cleanups.
@@ -234,6 +237,12 @@ async def purge_session_storage(
 
     if not session_path.exists():
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail="No active session storage found for this session ID. Nothing to clean."
         )
+
+    if background_tasks is None:
+        background_tasks = BackgroundTasks()
+
+    background_tasks.add_task(background_disk_cleanup, session_path)
+    return {"status": "success", "message": f"Session storage container cleanup scheduled for {session_id}."}
